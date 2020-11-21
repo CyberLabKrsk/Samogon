@@ -1,6 +1,7 @@
 //---------------------------------
 //проект автоматики для самогонного аппарата
 //STM32F104*******************
+//твердотельное реле
 //
 //----------------------------------
 //SD
@@ -65,7 +66,8 @@ int pidMax = 100;
 int prevInput = 0;
 float integral = 0.0;
 
-#include "Ucglib.h"                                // Include Ucglib library to drive the display
+#include "Ucglib.h" // Include Ucglib library to drive the display
+#include "rusFont.h"
 Ucglib_ST7735_18x128x160_HWSPI ucg(PA4, PA2, PA3); // (A0, CS, RESET)
 int M = 2;                                         // масштаб
 const int y = 128;                                 //высота
@@ -260,7 +262,7 @@ void rtc_sec()
     }
     //    ucg.drawBox(0, y - celsius1 + 20, 10, y);
     //отбображение линии заданной температуры
-    ucg.setColor(0, 0, 0);
+    ucg.setColor(255, 255, 255);
     ucg.drawHLine(0, y + 20 - setpoint, x);
     ucg.setPrintPos(x - 35, y + 15 - setpoint); // Set position (x,y)
     ucg.print(int(setpoint));
@@ -461,7 +463,7 @@ void setup(void) // --------------------------Start of setup
 
 void loop(void) // Start of loop
 {
-    //    noInterrupts();
+
     if (celsius1 > 98)
     {
         output = 0;
@@ -471,5 +473,4 @@ void loop(void) // Start of loop
     {
         noTone(sound_pin);
     }
-    //  interrupts();
 }
