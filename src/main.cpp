@@ -255,7 +255,7 @@ void rtc_sec()
     }
     //    ucg.drawBox(0, y - celsius1 + 20, 10, y);
     //отбображение линии заданной температуры
-    ucg.setColor(255, 255, 253);
+    ucg.setColor(255, 255, 255);
     ucg.drawHLine(0, y + 20 - setpoint, x);
     ucg.setPrintPos(x - 35, y + 15 - setpoint); // Set position (x,y)
     ucg.print(int(setpoint));
