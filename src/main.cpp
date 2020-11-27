@@ -9,8 +9,8 @@ const int CS_TFT = PA2; //для карты памяти
 #define sound_pin PB12
 
 //таймеры
-HardwareTimer *MyTim1 = new HardwareTimer(TIM1); //таймер 5 - 1 минутный
-HardwareTimer *MyTim2 = new HardwareTimer(TIM2); //таймер 4 - 1 секундный + PWM
+HardwareTimer *MyTim1 = new HardwareTimer(TIM1); //таймер 1 - 1 минутный
+HardwareTimer *MyTim2 = new HardwareTimer(TIM2); //таймер 2 - 1 секундный + PWM
 //функция tone() ИСПОЛЬЗУЕТ timer3????? !!!!!!!!!!!!!!!!!!!!
 //давления датчик
 unsigned long int pressureSA; //сумма всех показаний давления за SA секунд
