@@ -39,7 +39,11 @@
 #include <SPI.h>
 
 #include "Ucglib.h"
-
+//#if defined(__arm__)
+//#ifndef __NOP
+#define __NOP __asm volatile("nop")
+//#endif
+//#endif
 /*=========================================================================*/
 /* 8 Bit SW SPI */
 
@@ -57,7 +61,7 @@ static void ucg_nano_delay(void)
   volatile uint32_t i;
   for (i = 0; i < 1; i++)
   {
-    /*__NOP;*/
+    __NOP;
   }
   //delayMicroseconds(1);
 }
@@ -673,6 +677,7 @@ static int16_t ucg_com_arduino_3wire_9bit_HW_SPI(ucg_t *ucg, int16_t msg, uint16
 #if ARDUINO >= 10600
     SPI.begin();
     SPI.beginTransaction(SPISettings(1000000000UL / ((ucg_com_info_t *)data)->serial_clk_speed, MSBFIRST, SPI_MODE0));
+
 #else
     SPI.begin();
 
@@ -837,22 +842,22 @@ static void ucg_com_arduino_send_8bit(ucg_t *ucg, uint8_t data)
 {
   int i;
 #if defined(__arm__)
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
 #elif defined(__AVR__)
 #else
   delayMicroseconds(1);
@@ -867,22 +872,22 @@ static void ucg_com_arduino_send_8bit(ucg_t *ucg, uint8_t data)
   }
 
 #if defined(__arm__)
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
   delayMicroseconds(1);
 #elif defined(__AVR__)
 #else
@@ -892,22 +897,22 @@ static void ucg_com_arduino_send_8bit(ucg_t *ucg, uint8_t data)
   *u8g_data_port[8] &= ~u8g_data_mask[8];
 
 #if defined(__arm__)
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
-  /*__NOP;*/
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
+  __NOP;
   delayMicroseconds(1);
 #elif defined(__AVR__)
 #else
@@ -1215,6 +1220,8 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
 #if ARDUINO >= 10600
     SPI.begin();
     SPI.beginTransaction(SPISettings(1000000000UL / ((ucg_com_info_t *)data)->serial_clk_speed, MSBFIRST, SPI_MODE0));
+    //SPI.beginTransaction(SPISettings(SystemCoreClock / 3, MSBFIRST, SPI_MODE0));
+    //SPI.setClockDivider(SPI_CLOCK_DIV2);
 #else
     SPI.begin();
 

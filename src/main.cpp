@@ -1,6 +1,8 @@
 //SD
 #include <SD.h>
 #include <SPI.h>
+///строка 66 spi_com.h #define SPI_SPEED_CLOCK_DEFAULT 4000000
+//строка 103 заполнение параметров
 
 const int CS_SD = PB0;  //для карты памяти
 const int CS_TFT = PA2; //для карты памяти
@@ -36,17 +38,17 @@ uint8_t sensor1[8] = {0x28, 0xFF, 0xA2, 0xFE, 0x61, 0x16, 0x03, 0x36};
 uint8_t sensor2[8] = {0x28, 0xFF, 0xDE, 0xCB, 0x61, 0x16, 0x03, 0xB3};
 byte data1[2];
 byte data2[2];
-float celsius1, celsius2;
+float celsius1, celsius1_old, celsius2;
 
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // величины регулятора
-float gatepoint;  // температура открытия клапана охлаждения
-float setpoint;   // заданная величина текущего отбора
-float startpoint; // начальная температура отбора
-float headpoint;  //температура заершения отбора голов
-float midpoint;   //температура завершения отбора тела
-float endpoint;   //температура завершения отбора хвостов
-float output = 0; // выход с регулятора на управляющее устройство (например величина ШИМ или угол поворота серво)
+float gatepoint, setpoint_old; // температура открытия клапана охлаждения
+float setpoint;                // заданная величина текущего отбора
+float startpoint;              // начальная температура отбора
+float headpoint;               //температура заершения отбора голов
+float midpoint;                //температура завершения отбора тела
+float endpoint;                //температура завершения отбора хвостов
+float output = 0;              // выход с регулятора на управляющее устройство (например величина ШИМ или угол поворота серво)
 // коэффициенты
 float Kp = 0.01;
 float Ki = 0.01;
@@ -62,10 +64,13 @@ float integral = 0.0;
 
 #include "Ucglib.h"                                // Include Ucglib library to drive the display
 Ucglib_ST7735_18x128x160_HWSPI ucg(PA4, PA2, PA3); // (A0, CS, RESET)
-int M = 2;                                         // масштаб
-const int y = 128;                                 //высота
-const int x = 160;                                 //ширина
-int down = 40;                                     // верхня точка свободного поля
+
+float M = 1;       // масштаб
+int Yoffset = 20;  //
+int W_tele = 40;   // высота телеметрической графической части
+const int y = 128; //высота
+const int x = 160; //ширина
+
 float graph[x];
 int last_y, last_x;
 String logo;
@@ -116,6 +121,7 @@ void pressure_ctrl()
 
     //блок контроля давления
     //если давление позволяет увеличиваем температуру на 1 градус через 100 секунд
+    setpoint_old = setpoint;
     if ((celsius1 < endpoint) && (celsius1 > startpoint))
     {
         if ((pressureSA / SA) < max_pressure) //сравниваем среднее значение давления и максимально возможное
@@ -132,6 +138,20 @@ void pressure_ctrl()
                 setpoint--;
             }
         }
+        //НУЖНО РИСУЕМ! НОВУЮ СЕТПОИНТ
+
+        //затираем старое
+        ucg.setColor(0, 0, 0);
+        ucg.setPrintPos(x - 35, y - Yoffset - graph[x - 1] - 15); // Set position (x,y)
+        ucg.print(int(setpoint_old));
+        ucg.drawGlyph(x - 10, y - Yoffset - 15, 0, 0xb0); // degree sign
+        //рисуем новое
+        ucg.setColor(0, 255, 0);
+        ucg.setPrintPos(x - 35, y - Yoffset - graph[x - 1] - 15); // Set position (x,y)
+        ucg.print(int(setpoint));
+        ucg.drawGlyph(x - 10, y - Yoffset - 15, 0, 0xb0); // degree sign
+
+        //-----------
     }
     pressureSA = 0; //обнуляем массив
     //давление
@@ -221,23 +241,39 @@ void rtc_sec()
         color[1] = 0;
         color[2] = 0;
     }
-    ucg.setColor(0, 0, 0);
-    ucg.drawBox(0, 10, 160, 30);
-    ucg.setColor(color[0], color[1], color[2]);
-
-    ucg.setFont(ucg_font_inb27_tf);
-    ucg.setPrintPos(10, 40); // Set position (x,y)
-    ucg.print(celsius1);
-    ucg.drawGlyph(120, 40, 0, 0xb0); // degree sign
-    ucg.setFont(ucg_font_courB12_mf);
 
     celsius2 = (float)((data2[1] << 8) | data2[0]) / 16.0;
 
-    //---РИСУЕМ ГРАФИКИ-------------
-    ucg.setColor(0, 0, 0);
-    ucg.drawBox(0, 40, 160, 128 - 40);
-    //перезапись старых значений
+    if (celsius1_old != celsius1)
+    {
+        ucg.setColor(0, 0, 0);
+        ucg.drawBox(0, 10, 160, 30);
+        ucg.setColor(color[0], color[1], color[2]);
+        ucg.setFont(ucg_font_inb27_tf);
+        ucg.setPrintPos(10, 40); // Set position (x,y)
+        ucg.print(celsius1);
+        ucg.drawGlyph(120, 40, 0, 0xb0); // degree sign
+        ucg.setFont(ucg_font_courB12_mf);
+    }
+    celsius1_old = celsius1;
 
+    //---РИСУЕМ ГРАФИКИ-------------
+    //расчитываем масштаб и сдвиг по Y
+    Yoffset = (y - W_tele) / 2;
+    M = 1.1;
+
+    //стираем старый график
+    ucg.setColor(0, 0, 0);
+    for (int xx = x - 1; xx > 0; xx--)
+    {
+
+        if (int(graph[xx]) != setpoint)
+        {
+            ucg.drawPixel(xx, y + Yoffset - graph[xx]);
+        }
+    }
+
+    //перезапись старых значений
     for (int xx = x - 1; xx > 0; xx--)
     {
         graph[xx] = graph[xx - 1];
@@ -247,28 +283,36 @@ void rtc_sec()
 
     for (int xx = x - 1; xx > 0; xx--)
     {
-        //отображение массива graph
-        ucg.setColor(color[0], color[1], color[2]);
-        //ucg.drawBox(xx, y - graph[xx] + 20, 1, y);
-        ucg.drawPixel(xx, y + 20 - graph[xx]);
-        //        ucg.drawHLine(0, y + 20 - graph[xx], 20);
-    }
-    //    ucg.drawBox(0, y - celsius1 + 20, 10, y);
-    //отбображение линии заданной температуры
-    ucg.setColor(0, 0, 0);
-    ucg.drawHLine(0, y + 20 - setpoint, x);
-    ucg.setPrintPos(x - 35, y + 15 - setpoint); // Set position (x,y)
-    ucg.print(int(setpoint));
-    ucg.drawGlyph(150, y + 15 - setpoint, 0, 0xb0); // degree sign
-    //ucg.drawCircle(0, y + 20 - setpoint, 3, UCG_DRAW_ALL);
+        if (int(graph[xx]) == setpoint)
+        {
+            ucg.setColor(255, 255, 255);
+        }
+        else
+        {
+            ucg.setColor(color[0], color[1], color[2]);
+        }
 
-    /* //давление
+        //рисуем новый график
+        if (int(graph[xx]) != setpoint)
+        {
+
+            ucg.drawPixel(xx, y + Yoffset - graph[xx]);
+        }
+    }
+    //рисуем SETPOINT
+    ucg.setColor(255, 255, 255);
+    ucg.drawHLine(0, y - Yoffset, x);
+    ucg.setPrintPos(x - 35, y - Yoffset - graph[x - 1] - 15); // Set position (x,y)
+    ucg.print(int(setpoint));
+    ucg.drawGlyph(x - 10, y - Yoffset - 15, 0, 0xb0); // degree sign
+
+    //давление
     ucg.setColor(10, 10, 10);
     ucg.drawBox(0, 0, 60, 10);
     ucg.setColor(255, 0, 0);
     ucg.setPrintPos(0, 10); // Set position (x,y)
     ucg.print(analogRead(pressure_pin));
-*/
+
     //SD ЗАПИСЬ ЛОГОВ----------------
 
     String dataString = "";
@@ -320,7 +364,6 @@ void rtc_sec()
 //-------------------------------------
 void setup(void) // --------------------------Start of setup
 {
-
     pinMode(PB8, OUTPUT);       //подсветка кнопка без фиксации
     pinMode(PB9, INPUT_PULLUP); //кнопка без фиксации
     pinMode(PC14, OUTPUT);      //blue
@@ -430,6 +473,13 @@ void setup(void) // --------------------------Start of setup
     }
 
     ucg.clearScreen(); // Clear the screen
+    //РИСУЕМ SETPOINT
+    Yoffset = (y - W_tele) / 2;
+    ucg.setColor(255, 255, 255);
+    ucg.drawHLine(0, y - Yoffset, x);
+    ucg.setPrintPos(x - 35, y - Yoffset - 15); // Set position (x,y)
+    ucg.print(int(setpoint));
+    ucg.drawGlyph(x - 10, y - Yoffset - 15, 0, 0xb0); // degree sign
     //--------------------------------------------------
 
     //ШИМ
